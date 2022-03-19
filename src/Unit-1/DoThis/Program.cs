@@ -14,17 +14,24 @@ class Program
         // initialize MyActorSystem
         MyActorSystem =ActorSystem.Create("MyActorSystem");
 
-        // time to make your first actors!
-        // make consoleWriterActor using these props: Props.Create(() => new ConsoleWriterActor())
-        // make consoleReaderActor using these props: Props.Create(() => new ConsoleReaderActor(consoleWriterActor))
-        var consoleWriterActor = MyActorSystem
-            .ActorOf(Props.Create(() => new ConsoleWriterActor()));
-        var consoleReaderActor = MyActorSystem
-            .ActorOf(Props.Create(() => new ConsoleReaderActor(consoleWriterActor)));
-
-        // tell console reader to begin
-        consoleReaderActor.Tell(ConsoleReaderActor.StartCommand);
-
+        Props consoleWriterProps = Props.Create(typeof (ConsoleWriterActor));
+        
+        IActorRef consoleWriterActor = MyActorSystem.ActorOf(consoleWriterProps,
+            "consoleWriterActor");
+        
+        Props validationActorProps = Props.Create(
+            () => new ValidationActor(consoleWriterActor));
+        
+        IActorRef validationActor = MyActorSystem.ActorOf(validationActorProps, 
+            "validationActor");
+        
+        Props consoleReaderProps = Props.Create<ConsoleReaderActor>(validationActor);
+        
+        IActorRef consoleReaderActor = MyActorSystem.ActorOf(consoleReaderProps,
+            "consoleReaderActor");
+        
+       consoleReaderActor.Tell(ConsoleReaderActor.StartCommand);
+        
         // blocks the main thread from exiting until the actor system is shut down
         MyActorSystem.WhenTerminated.Wait();
     }
